@@ -4,14 +4,33 @@ import socket
 
 # Function to extract features from log files
 def extract_features_from_log(log_file):
-    # Read log file
-    df = pd.read_csv(log_file)
-    
-    # Feature extraction code
-    # ...
-    # ...
-    # ...
-    
+    # Load log file data into a pandas dataframe
+    log_data = pd.read_csv(log_file)
+
+    # Remove unnecessary columns
+    log_data.drop(['timestamp', 'log_level'], axis=1, inplace=True)
+
+    # Convert text data to numerical data
+    log_data['message_length'] = log_data['message'].apply(len)
+
+    # Scale the data
+    scaler = MinMaxScaler()
+    scaled_data = scaler.fit_transform(log_data)
+
+    # Extract features
+    features = []
+    for i in range(len(scaled_data)):
+        feature = []
+        for j in range(len(scaled_data[i])):
+            if j != 0:
+                diff = scaled_data[i][j] - scaled_data[i][j-1]
+                feature.append(diff)
+        features.append(feature)
+
+    # Create a feature extracted log file
+    feature_df = pd.DataFrame(features, columns=log_data.columns[1:])
+    feature_df.to_csv(log_file[:-4] + '_feature_extracted.csv', index=False)
+
     # Return extracted features as numpy array
     return np.array(features)
 

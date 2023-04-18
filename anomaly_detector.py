@@ -1,57 +1,34 @@
-import socket
 import numpy as np
-from sklearn.cluster import KMeans
+import pandas as pd
+import tensorflow as tf
+from tensorflow import keras
+from tensorflow.keras import layers
 
-##
-# This code uses the socket module to receive the extracted features from the feature extractor, detects anomalies using a clustering algorithm, and logs the anomalies to a file named "anomalies.log".
-##
 
-# Function to detect anomalies
-def detect_anomalies(features):
-    # Apply clustering algorithm to features
-    kmeans = KMeans(n_clusters=2, random_state=0).fit(features)
+# Load the data
+train_data = pd.read_csv('train_features.csv')
+test_data = pd.read_csv('test_features.csv')
 
-    # Get cluster labels
-    labels = kmeans.labels_
+# Normalize the data
+train_mean = train_data.mean()
+train_std = train_data.std()
+train_data = (train_data - train_mean) / train_std
+test_data = (test_data - train_mean) / train_std
 
-    # Determine anomalies as points in the smaller cluster
-    cluster_counts = np.bincount(labels)
-    smallest_cluster = np.argmin(cluster_counts)
-    anomalies = features[labels == smallest_cluster]
+# Define the model
+model = keras.Sequential([
+    layers.Dense(64, activation='relu', input_shape=[len(train_data.keys())]),
+    layers.Dense(32, activation='relu'),
+    layers.Dense(1)
+])
 
-    # Return anomalies as numpy array
-    return anomalies
+model.compile(loss='mse', optimizer=tf.keras.optimizers.RMSprop(0.001))
 
-# Create a socket object
-s = socket.socket()
+# Train the model
+model.fit(train_data, epochs=100, verbose=0)
 
-# Get local machine name
-host = socket.gethostname()
+# Predict the anomaly scores for the test data
+test_scores = model.predict(test_data)
 
-# Reserve a port for your service.
-port = 12345
-
-# Bind to the port
-s.bind((host, port))
-
-# Wait for client to connect
-s.listen(5)
-
-while True:
-    # Wait for client to connect
-    c, addr = s.accept()
-    print('Got connection from', addr)
-
-    # Receive extracted features from feature extractor
-    features = np.frombuffer(c.recv(1024))
-
-    # Detect anomalies in the features
-    anomalies = detect_anomalies(features)
-
-    # Log the anomalies
-    with open("anomalies.log", "a") as f:
-        for anomaly in anomalies:
-            f.write(str(anomaly) + "\n")
-
-    # Close the connection
-    c.close()
+# Save the results to a CSV file
+np.savetxt('test_scores.csv', test_scores, delimiter=',')

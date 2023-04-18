@@ -43,13 +43,16 @@ for col in df.columns:
 X = df.drop(['attack'], axis=1).values
 y = df['attack'].values
 
-# Split the data into training and validation sets
-train_idx = np.random.choice(range(len(X)), int(len(X) * 0.8), replace=False)
-val_idx = np.array(list(set(range(len(X))) - set(train_idx)))
+# Split the data into training, validation, and test sets
+train_idx = np.random.choice(range(len(X)), int(len(X) * 0.6), replace=False)
+val_idx = np.random.choice(list(set(range(len(X))) - set(train_idx)), int(len(X) * 0.2), replace=False)
+test_idx = list(set(range(len(X))) - set(train_idx) - set(val_idx))
 X_train = X[train_idx]
 y_train = y[train_idx]
 X_val = X[val_idx]
 y_val = y[val_idx]
+X_test = X[test_idx]
+y_test = y[test_idx]
 
 # Define the model
 input_layer = Input(shape=(X_train.shape[1], 1))

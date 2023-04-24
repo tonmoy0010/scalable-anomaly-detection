@@ -71,9 +71,13 @@ model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accur
 model.fit(x=[X_train[categorical_features], X_train[numerical_features]], y=y_train, validation_data=([X_test[categorical_features], X_test[numerical_features]], y_test), epochs=10, batch_size=64)
 
 # Extract the features using the trained model
+
 feature_extractor = Model(inputs=model.input, outputs=model.layers[3].output)
 X_train_features = feature_extractor.predict([X_train[categorical_features], X_train[numerical_features]])
 X_test_features = feature_extractor.predict([X_test[categorical_features], X_test[numerical_features]])
+
+X_train_features = np.reshape(X_train_features, (X_train_features.shape[0], -1))
+X_test_features = np.reshape(X_test_features, (X_test_features.shape[0], -1))
 
 # Save the extracted features to a CSV file
 pd.DataFrame(X_train_features).to_csv('train_features.csv', index=False)

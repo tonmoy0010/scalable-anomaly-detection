@@ -4,6 +4,7 @@ import tensorflow as tf
 from keras.models import Sequential
 from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout, Reshape, LSTM
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 
 # Load the extracted features from the CSV files
 train_df = pd.read_csv('train_features.csv')
@@ -57,15 +58,22 @@ for i, model in enumerate(models):
     model.fit(X, y, epochs=10, batch_size=32)
 
 # Evaluate the performance of the ensemble on the test data
-ensemble_output = (cnn_model.predict(test_X) + rnn_model.predict(test_X)) / 2
+cnn_output = cnn_model.predict(test_X)
+rnn_output = rnn_model.predict(test_X)
+ensemble_output = (cnn_output + rnn_output) / 2
 threshold = 0.5
 anomalies = (ensemble_output > threshold).astype(int)
-accuracy = np.mean(anomalies == test_y)
-confusion_matrix = tf.math.confusion_matrix(test_y, anomalies).numpy()
-print(f"Accuracy: {accuracy}")
-print(f"Confusion matrix: {confusion_matrix}")
+
+precision = precision_score(test_y, anomalies)
+recall = recall_score(test_y, anomalies)
+f1 = f1_score(test_y, anomalies)
+auc_roc = roc_auc_score(test_y, ensemble_output)
+
+print(f"Precision: {precision}")
+print(f"Recall: {recall}")
+print(f"F1-score: {f1}")
+print(f"AUC-ROC: {auc_roc}")
 
 # Print the number of anomalies detected
 num_anomalies = np.sum(anomalies)
 print(f"Number of anomalies detected: {num_anomalies}")
-
